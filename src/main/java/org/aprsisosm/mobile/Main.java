@@ -72,7 +72,7 @@ public class Main extends Activity {
             s.connect(new InetSocketAddress(host,port),12000);
             PrintWriter w=new PrintWriter(new OutputStreamWriter(s.getOutputStream(),StandardCharsets.US_ASCII),true);
             synchronized(this){if(active!=s)return;output=w;}
-            w.print("user "+call+" pass "+pass+" vers APRSISOSM 0.2.0 filter r/"+lat+"/"+lon+"/100\r\n");w.flush();
+            w.print("user "+call+" pass "+pass+" vers APRSISOSM "+BuildConfig.VERSION_NAME+" filter r/"+lat+"/"+lon+"/100\r\n");w.flush();
             BufferedReader r=new BufferedReader(new InputStreamReader(s.getInputStream(),StandardCharsets.US_ASCII));String line;
             while((line=r.readLine())!=null && active==s){
                 if(line.startsWith("# logresp ")){synchronized(this){if(active!=s)return;verified=line.startsWith("# logresp "+call+" verified,");}event("status",line);}
@@ -90,6 +90,7 @@ public class Main extends Activity {
     }
     protected void onDestroy(){gps.removeUpdates(listener);tts.shutdown();disconnect();writes.shutdownNow();super.onDestroy();}
 }
+
 
 
 
