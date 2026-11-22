@@ -4,7 +4,7 @@ Android APRS station map, two-way messaging and offline regional navigation.
 
 **Android · [Download APRSERJa.apk](https://github.com/kj4dxk/APRSERJa/releases/latest/download/APRSERJa.apk)** · [Release 2026.11.22.1101 and checksum](https://github.com/kj4dxk/APRSERJa/releases/tag/2026.11.22.1101)
 
-**Windows · [Download APRSERJ64.exe](https://github.com/kj4dxk/APRSERJ64/releases/latest/download/APRSERJ64.exe)** · [Windows setup and manual](https://github.com/kj4dxk/APRSERJ64)
+[Windows · APRSERJ64](https://github.com/kj4dxk/APRSERJ64) · [iPhone, iPad, and Mac · APRSERJi](https://github.com/kj4dxk/APRSERJi)
 
 Requires Android 8 or later. The renamed app uses package `org.aprserja.mobile` and installs separately from the previous Android app; enter your credentials again. Existing app data is not deleted. Install the APK and open the APRS-IS connection panel. Enter your callsign and use the receive-only passcode `-1` to watch stations within 100 km of the map center. Sending messages requires a verified APRS-IS login. Numbered messages are stored locally and retried after reconnecting with the same callsign.
 
