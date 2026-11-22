@@ -1,4 +1,4 @@
-package org.aprsisosm.mobile;
+package org.aprserja.mobile;
 import android.app.*;
 import android.content.*;
 import android.os.*;
@@ -45,7 +45,9 @@ public class Smoke extends Instrumentation {
                     }
                 }
             }else if(phase.equals("live")){
-                js("Radio.connect('rotate.aprs2.net',14580,'KJ4DXK','-1',42.36,-71.06)");
+                String liveCall=args.getString("callsign","");
+                if(!liveCall.matches("[A-Z0-9]{3,9}(-[0-9]{1,2})?"))throw new IOException("Supply your callsign for the receive-only live test");
+                js("Radio.connect('rotate.aprs2.net',14580,'"+liveCall+"','-1',42.36,-71.06)");
                 for(int i=0;i<60;i++){if(js("stations.size>0").equals("true"))break;Thread.sleep(1000);}
                 await("stations.size>0");report.putString("stations",js("Array.from(stations.keys()).slice(0,4)"));
             }else if(phase.equals("navigation")){

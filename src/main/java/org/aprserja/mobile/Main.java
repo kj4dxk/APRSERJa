@@ -1,4 +1,4 @@
-package org.aprsisosm.mobile;
+package org.aprserja.mobile;
 
 import android.app.*;
 import android.content.*;
@@ -21,10 +21,10 @@ public class Main extends Activity {
         public void onStatusChanged(String p,int status,Bundle extras){}
     };
     @JavascriptInterface public void track(){runOnUiThread(()->{
-        if(checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)!=0){requestPermissions(new String[]{android.Manifest.permission.ACCESS_COARSE_LOCATION,android.Manifest.permission.ACCESS_FINE_LOCATION},9);return;}
+        if(checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)!=android.content.pm.PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{android.Manifest.permission.ACCESS_COARSE_LOCATION,android.Manifest.permission.ACCESS_FINE_LOCATION},9);return;}
         gps.requestLocationUpdates("gps",1000,1,listener);
     });}
-    public void onRequestPermissionsResult(int code,String[] names,int[] results){super.onRequestPermissionsResult(code,names,results);if(code==9&&checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)==0)track();}
+    public void onRequestPermissionsResult(int code,String[] names,int[] results){super.onRequestPermissionsResult(code,names,results);if(code==9&&checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)==android.content.pm.PackageManager.PERMISSION_GRANTED)track();}
     @JavascriptInterface public void speak(String words){runOnUiThread(()->{if(voiceReady)tts.speak(words,android.speech.tts.TextToSpeech.QUEUE_FLUSH,null,"navigation");});}
     private volatile Socket active;
     private volatile PrintWriter output;
@@ -72,7 +72,7 @@ public class Main extends Activity {
             s.connect(new InetSocketAddress(host,port),12000);
             PrintWriter w=new PrintWriter(new OutputStreamWriter(s.getOutputStream(),StandardCharsets.US_ASCII),true);
             synchronized(this){if(active!=s)return;output=w;}
-            w.print("user "+call+" pass "+pass+" vers APRSISOSM "+BuildConfig.VERSION_NAME+" filter r/"+lat+"/"+lon+"/100\r\n");w.flush();
+            w.print("user "+call+" pass "+pass+" vers APRSERJa "+BuildConfig.VERSION_NAME+" filter r/"+lat+"/"+lon+"/100\r\n");w.flush();
             BufferedReader r=new BufferedReader(new InputStreamReader(s.getInputStream(),StandardCharsets.US_ASCII));String line;
             while((line=r.readLine())!=null && active==s){
                 if(line.startsWith("# logresp ")){synchronized(this){if(active!=s)return;verified=line.startsWith("# logresp "+call+" verified,");}event("status",line);}

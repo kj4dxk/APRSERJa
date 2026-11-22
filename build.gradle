@@ -4,14 +4,19 @@ def releaseVersion = file('version.txt').text.trim()
 def releaseMinute = java.time.LocalDateTime.parse(releaseVersion, java.time.format.DateTimeFormatter.ofPattern('uuuu.MM.dd.HHmm'))
 android {
     buildFeatures { buildConfig true }
-    namespace 'org.aprsisosm.mobile'
+    namespace 'org.aprserja.mobile'
     compileSdk 36
     defaultConfig {
-        applicationId 'org.aprsisosm.mobile'
+        applicationId 'org.aprserja.mobile'
         minSdk 26
         targetSdk 36
         versionCode Math.toIntExact(java.time.Duration.between(java.time.LocalDateTime.of(2020,1,1,0,0), releaseMinute).toMinutes())
         versionName releaseVersion
+    }
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = variant.buildType.name == 'release' ? 'APRSERJa-unsigned.apk' : 'APRSERJa-debug.apk'
+        }
     }
 }
 
