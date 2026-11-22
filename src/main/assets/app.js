@@ -1,4 +1,3 @@
-const radioStore=new Proxy({}, {get:(_,key)=>Radio.read(key)||localStorage[key],set:(_,key,value)=>Radio.save(key,String(value))});
 const el=id=>document.getElementById(id), map=el("map"), ctx=map.getContext("2d");
 let nodes,roads,places,graph,origin,path=[],center,scale,stations=new Map(),drag;
 const km=(a,b)=>111.2*Math.hypot(a.lat-b.lat,(a.lon-b.lon)*Math.cos((a.lat+b.lat)*Math.PI/360));
@@ -31,46 +30,58 @@ function snap(p,network=graph){let best=null,dist=.25;for(const n of network.key
 function route(a,b,network=graph){let queue=[[0,a]],dist=new Map([[a,0]]),prev=new Map();while(queue.length){queue.sort((x,y)=>y[0]-x[0]);const [cost,n]=queue.pop();if(n===b){const out=[b];while(prev.has(out[0]))out.unshift(prev.get(out[0]));return [out,cost];}if(cost!==dist.get(n))continue;for(const next of network.get(n)||[]){const d=cost+km(n,next);if(d<(dist.get(next)??Infinity)){dist.set(next,d);prev.set(next,n);queue.push([d,next]);}}}return [[],0];}
 function xy(p){return [map.width/2+(p.lon-center.lon)*scale,map.height/2-(p.lat-center.lat)*scale/Math.cos(center.lat*Math.PI/180)];}
 function draw(){if(!roads)return;map.width=map.clientWidth;map.height=map.clientHeight;function line(a,b){ctx.moveTo(...xy(a));ctx.lineTo(...xy(b));}ctx.beginPath();for(const [a,b] of roads)line(a,b);ctx.strokeStyle="#adb8a8";ctx.lineWidth=3;ctx.stroke();ctx.beginPath();for(let i=1;i<path.length;i++)line(path[i-1],path[i]);ctx.strokeStyle="#176ca5";ctx.lineWidth=5;ctx.stroke();if(fix){const [x,y]=xy(fix);ctx.fillStyle="#005db8";ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();ctx.fillText("GPS",x+8,y);}for(const [name,p] of stations){const [x,y]=xy(p);ctx.fillStyle="#ab402a";ctx.fillRect(x-3,y-3,7,7);ctx.fillText(name,x+6,y);}}
-function history(){const peer=el("peer").value.trim().toUpperCase();el("history").replaceChildren();for(const m of JSON.parse(radioStore.chats||"[]").filter(m=>m.peer===peer&&m.account===el("call").value.toUpperCase()).slice(-35)){const p=document.createElement("p");p.textContent=m.text;el("history").append(p);}for(const m of queueItems().filter(x=>x.account===el("call").value.toUpperCase()&&x.peer===peer).slice(-35)){const p=document.createElement("p");p.textContent="You · "+m.body+" ("+m.state+")";el("history").append(p);}}
-let onlineAccount="";
-function queueItems(){return JSON.parse(radioStore.outbox||"[]");}
-function pump(){
- const items=queueItems();
- for(const m of items){if(m.account!==onlineAccount||m.next>Date.now()||m.state!=="queued")continue;
- if(m.attempts===5){m.state="unconfirmed";continue;}
- Radio.send(m.peer,m.body+"{"+m.id);m.attempts++;m.next=Date.now()+30000*m.attempts;}
- radioStore.outbox=JSON.stringify(items);history();
+function callsign(id){return el(id).value.trim().toUpperCase();}
+let selectedChat=null;
+function history(){
+ const account=callsign("call"),peer=callsign("peer");
+ if(selectedChat?.account===account&&selectedChat.peer===peer)return;
+ selectedChat={account,peer};
+ el("history").replaceChildren();
+ Radio.selectChat(account,peer);
 }
 function queueMessage(){
- const peer=el("peer").value.trim().toUpperCase(),body=el("message").value,account=el("call").value.trim().toUpperCase();
- if(!/^[A-Z0-9]{1,6}(-[0-9]{1,2})?$/.test(peer)||!account||!/^[ -z|~]{1,61}$/.test(body)){el("status").textContent="Enter callsigns and a message of 1–61 ASCII characters";return;}
- const seq=((Number(radioStore.sequence)||0)+1)%100000;radioStore.sequence=seq;
- const items=queueItems();items.push({account,peer,body,id:String(seq),attempts:0,next:0,state:"queued"});radioStore.outbox=JSON.stringify(items);el("message").value="";pump();
+ history();
+ Radio.queueChat(callsign("call"),callsign("peer"),el("message").value);
 }
-setInterval(pump,10000);
 function receive(type,data){
- if(type==="status"){el("status").textContent=data;onlineAccount=/^# logresp (\S+) verified,/.exec(data)?.[1]||"";if(onlineAccount)pump();return;}
- if(type==="gps"){fix=JSON.parse(data);if(el("follow").checked)center=fix;if(cues.length&&km(fix,cues[0].point)<.055)Radio.speak(cues.shift().text);draw();return;}if(type==="region"){try{loadRegion(data);localStorage.region=data;}catch(e){el("status").textContent=e.message;}return;}
- const packet=/^([^>]+)>[^:]+:(.*)$/.exec(data);if(!packet)return;
- const [,sender,body]=packet,account=el("call").value.toUpperCase();
- const msg=/^:(.{9}):(.*)$/.exec(body);
- if(type==="packet"&&msg&&msg[1].trim()===account){
-  const control=/^(ack|rej)([A-Za-z0-9]{1,5})$/.exec(msg[2]);
-  if(control){const items=queueItems();for(const m of items)if(m.account===account&&m.peer===sender&&m.id===control[2])m.state=control[1]==="ack"?"acknowledged":"rejected";radioStore.outbox=JSON.stringify(items);}
-  else{const numbered=/^(.*)\{([A-Za-z0-9]{1,5})$/.exec(msg[2]),chats=JSON.parse(radioStore.chats||"[]");
-   if(!numbered||!chats.some(m=>m.account===account&&m.peer===sender&&m.id===numbered[2]&&Date.now()-m.time<86400000)){
-    chats.push({peer:sender,account,id:numbered?.[2],time:Date.now(),text:sender+" · "+(numbered?.[1]||msg[2])});radioStore.chats=JSON.stringify(chats.slice(-2000));}
-   if(numbered&&onlineAccount===account)Radio.send(sender,"ack"+numbered[2]);}
-  history();} const pos=/^(?:[!=]|[@/].{7})(\d{2})(\d{2}\.\d{2})([NS]).(\d{3})(\d{2}\.\d{2})([EW])/.exec(body);
- if(pos){const lat=(+pos[1]+pos[2]/60)*(pos[3]==="S"?-1:1),lon=(+pos[4]+pos[5]/60)*(pos[6]==="W"?-1:1);if(!stations.has(sender))el("stations").add(new Option(sender));stations.set(sender,{lat,lon});draw();}
+ if(type==="status"||type==="chatError"){el(type==="status"?"status":"chat-status").textContent=data;return;}
+ if(type==="queued"){
+  const entry=JSON.parse(data);
+  if(callsign("call")===entry.account&&callsign("peer")===entry.peer&&el("message").value===entry.body){
+   el("message").value="";
+   el("chat-status").textContent="";
+  }
+  return;
+ }
+ if(type==="history"){
+  const {account,peer,rows}=JSON.parse(data);
+  if(account!==callsign("call")||peer!==callsign("peer"))return;
+  const entries=rows.map(row=>{
+   const p=document.createElement("p");
+   p.dataset.status=row.status;
+   p.textContent=row.outgoing?"You · "+row.body+" ("+row.status.toLowerCase().replaceAll("_"," ")+")":peer+" · "+row.body;
+   return p;
+  });
+  el("history").replaceChildren(...entries);
+  return;
+ }
+ if(type==="gps"){fix=JSON.parse(data);if(el("follow").checked)center=fix;if(cues.length&&km(fix,cues[0].point)<.055)Radio.speak(cues.shift().text);draw();return;}
+ if(type==="region"){try{loadRegion(data);localStorage.region=data;}catch(e){el("status").textContent=e.message;}return;}
+ if(type==="stations"){
+  const picker=el("stations"),previous=picker.value;
+  stations=new Map(JSON.parse(data).map(point=>[point.name,point]));
+  picker.replaceChildren(...Array.from(stations.keys(),name=>new Option(name)));
+  if(stations.has(previous))picker.value=previous;
+  draw();
+ }
 }
 el("start").onclick=()=>{origin=selected()&&snap(selected());el("directions").textContent=origin?"Choose a destination.":"No nearby walking path";};
 el("route").onclick=()=>{const dest=selected()&&snap(selected());if(!origin||!dest){el("directions").textContent="Choose endpoints near a walking path";return;}const result=route(origin,dest);path=result[0];el("directions").textContent=path.length?result[1].toFixed(2)+" km walking":"No connected walking route";draw();};
 el("query").oninput=search;el("importer").onclick=()=>Radio.region();el("zin").onclick=()=>{scale*=1.5;draw();};el("zout").onclick=()=>{scale/=1.5;draw();};
 map.onpointerdown=e=>{drag=[e.clientX,e.clientY];map.setPointerCapture(e.pointerId);};map.onpointermove=e=>{if(!drag)return;center={lon:center.lon-(e.clientX-drag[0])/scale,lat:center.lat+(e.clientY-drag[1])*Math.cos(center.lat*Math.PI/180)/scale};drag=[e.clientX,e.clientY];draw();};map.onpointerup=map.onpointercancel=()=>drag=null;
-el("connect").onclick=()=>{radioStore.call=el("call").value.toUpperCase().trim();el("call").value=radioStore.call;Radio.connect(el("host").value,+el("port").value,radioStore.call,el("pass").value,center.lat,center.lon);};el("stop").onclick=()=>{onlineAccount="";Radio.disconnect();el("status").textContent="Disconnected";};
+el("connect").onclick=()=>{const account=callsign("call");Radio.save("call",account);el("call").value=account;history();Radio.connect(el("host").value,+el("port").value,account,el("pass").value,center.lat,center.lon);};el("stop").onclick=()=>Radio.disconnect();
 el("locate").onclick=()=>{const id=el("stations").value;if(!stations.has(id))return;center=stations.get(id);el("peer").value=id;draw();history();};
-el("send").onclick=queueMessage;el("peer").oninput=history;el("call").value=radioStore.call||"";window.onresize=draw;loadRegion(localStorage.region||Radio.sample());
+el("send").onclick=queueMessage;el("peer").oninput=history;el("call").oninput=history;el("call").value=Radio.read("call")||localStorage.call||"";Radio.importChats(localStorage.chats||"",localStorage.outbox||"");history();window.onresize=draw;loadRegion(localStorage.region||Radio.sample());
 
 
 function bearing(a,b){return Math.atan2((b.lon-a.lon)*Math.cos(a.lat*Math.PI/180),b.lat-a.lat)*180/Math.PI;}

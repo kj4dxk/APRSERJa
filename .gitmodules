@@ -1,0 +1,3 @@
+[submodule "shared/aprs-core"]
+	path = shared/aprs-core
+	url = https://github.com/kj4dxk/aprs-core.git

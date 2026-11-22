@@ -16,11 +16,13 @@ Driving uses shortest distance, road access tags and directed road segments. Thi
 
 ## Build and test
 
-Set version.txt to a new America/New_York release timestamp in YYYY.MM.DD.HHmm format. Use the same value for the Git tag. Use Android SDK 36 and the included Gradle wrapper. Run `./gradlew assembleDebug assembleRelease bundleRelease`. The public APK uses a release signing key. The debug build includes emulator smoke tests for local two-way chat, recovery after force-stop, routing, GPS and public receive-only APRS-IS.
+Clone with `--recurse-submodules` or run `git submodule update --init`. Use JDK 17, Android SDK 36 and the included Gradle wrapper. Run `./gradlew assembleDebug assembleRelease bundleRelease`. For a release, set version.txt to a new America/New_York timestamp in YYYY.MM.DD.HHmm format and use the same Git tag. The public APK uses a release signing key.
+
+The debug build includes emulator smoke tests for shared APRS-IS reception, two-way chat, legacy outbox import, recovery after force-stop, receive-only login, offline routing and GPS.
 
 ## Credits and licenses
 
-New application code uses the GNU Affero General Public License v3. See [LICENSE](LICENSE). The project follows the license choice of [APRSISMO](https://github.com/APRSFoundation/APRSISMO). [APRSERJ64](https://github.com/kj4dxk/APRSERJ64) supplied the Gradle wrapper and informed the station-to-chat workflow, full-SSID conversation identity, and durable outbox behavior. The standalone Android application implements its own map, routing and APRS logic.
+New application code uses the GNU Affero General Public License v3. See [LICENSE](LICENSE). The project follows the license choice of [APRSISMO](https://github.com/APRSFoundation/APRSISMO). Android owns the map and routing interface and uses [aprs-core](https://github.com/kj4dxk/aprs-core) for APRS-IS, packet decoding and durable chats. The app imports the existing history and outbox for this app installation on first launch after updating.
 
 The bundled Boston map data is © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the [Open Database License 1.0](https://opendatacommons.org/licenses/odbl/1-0/). The original XML is included in the source and APK.
 

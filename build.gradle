@@ -1,8 +1,15 @@
-buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.13.2' } }
-apply plugin: 'com.android.application'
+plugins {
+    id 'com.android.application' version '8.13.2'
+    id 'org.jetbrains.kotlin.android' version '2.2.21'
+    id 'org.jetbrains.kotlin.jvm' version '2.2.21' apply false
+}
 def releaseVersion = file('version.txt').text.trim()
 def releaseMinute = java.time.LocalDateTime.parse(releaseVersion, java.time.format.DateTimeFormatter.ofPattern('uuuu.MM.dd.HHmm'))
 android {
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     buildFeatures { buildConfig true }
     namespace 'org.aprserja.mobile'
     compileSdk 36
@@ -18,5 +25,12 @@ android {
             outputFileName = variant.buildType.name == 'release' ? 'APRSERJa-unsigned.apk' : 'APRSERJa-debug.apk'
         }
     }
+}
+
+kotlin { jvmToolchain(17) }
+
+dependencies {
+    implementation project(':core')
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1'
 }
 
