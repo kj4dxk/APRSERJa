@@ -1,0 +1,13 @@
+buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.13.2' } }
+apply plugin: 'com.android.application'
+android {
+    namespace 'org.aprsisosm.mobile'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'org.aprsisosm.mobile'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '0.1'
+    }
+}
