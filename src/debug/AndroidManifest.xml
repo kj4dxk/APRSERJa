@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"><instrumentation android:name=".Smoke" android:targetPackage="org.aprsisosm.mobile"/></manifest>
