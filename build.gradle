@@ -20,9 +20,15 @@ android {
         versionCode Math.toIntExact(java.time.Duration.between(java.time.LocalDateTime.of(2020,1,1,0,0), releaseMinute).toMinutes())
         versionName releaseVersion
     }
+    buildTypes {
+        debug {
+            if (providers.gradleProperty("qaPackage").isPresent()) applicationIdSuffix ".qa"
+        }
+    }
     applicationVariants.all { variant ->
         variant.outputs.all {
-            outputFileName = variant.buildType.name == 'release' ? 'APRSERJa-unsigned.apk' : 'APRSERJa-debug.apk'
+            outputFileName = variant.buildType.name == 'release' ? 'APRSERJa-unsigned.apk' :
+                (providers.gradleProperty("qaPackage").isPresent() ? 'APRSERJa-qa.apk' : 'APRSERJa-debug.apk')
         }
     }
 }
@@ -31,6 +37,6 @@ kotlin { jvmToolchain(17) }
 
 dependencies {
     implementation project(':core')
+    implementation 'com.github.mik3y:usb-serial-for-android:3.10.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1'
 }
-
